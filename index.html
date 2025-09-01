@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avaliador de Casas</title>
+  <style>
+    :root{
+      --bg:#0b1020; /* fundo escuro elegante */
+      --panel:#0f172a; /* slate-900 */
+      --soft:#111827; /* gray-900 */
+      --muted:#94a3b8; /* slate-400 */
+      --text:#e5e7eb; /* gray-200 */
+      --brand:#22c55e; /* green-500 */
+      --brand-2:#a78bfa; /* violet-400 */
+      --danger:#ef4444; /* red-500 */
+      --warn:#f59e0b; /* amber-500 */
+      --ok:#10b981; /* emerald-500 */
+      --card:#0b1224;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1000px 600px at 10% -10%,rgba(167,139,250,.15),transparent),
+                  radial-gradient(800px 500px at 110% 10%,rgba(34,197,94,.12),transparent),
+                  var(--bg);color:var(--text);font:15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif}
+    header{
+      position:sticky;top:0;z-index:10;background:linear-gradient(180deg,rgba(11,16,32,.9),rgba(11,16,32,.6));backdrop-filter: blur(6px);
+      border-bottom:1px solid rgba(148,163,184,.15)
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    h1{font-size:clamp(20px,2.6vw,28px);margin:0 0 6px;display:flex;align-items:center;gap:10px}
+    .badge{font-size:12px;color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:1fr 1.1fr;gap:18px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+    .panel{background:linear-gradient(180deg,rgba(17,24,39,.9),rgba(15,23,42,.9));border:1px solid rgba(148,163,184,.1);box-shadow:var(--shadow);border-radius:var(--radius)}
+    .panel .hd{padding:14px 16px 0;color:var(--muted);font-size:13px}
+    form{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;padding:14px 16px 16px}
+
+    label{font-size:12px;color:var(--muted);display:block;margin:0 0 6px}
+    input, textarea, select{
+      width:100%;padding:10px 12px;border-radius:12px;background:#0b1224;border:1px solid rgba(148,163,184,.15);color:var(--text);
+      outline:none; transition:.2s border-color, .2s box-shadow
+    }
+    input:focus, textarea:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+    textarea{min-height:74px;resize:vertical}
+
+    .col-6{grid-column:span 6}
+    .col-4{grid-column:span 4}
+    .col-3{grid-column:span 3}
+    .col-8{grid-column:span 8}
+    .col-12{grid-column:span 12}
+
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+    .btn{appearance:none;border:0;border-radius:14px;padding:10px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:600}
+    .btn-primary{background:linear-gradient(135deg,var(--brand),#16a34a);color:#07130a}
+    .btn-soft{background:#0b1224;color:var(--text);border:1px solid rgba(148,163,184,.18)}
+    .btn-danger{background:linear-gradient(135deg,#f87171,var(--danger));color:#2a0909}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;border-top:1px solid rgba(148,163,184,.12)}
+    .toolbar .group{display:flex;gap:8px;align-items:center}
+    .toolbar input{max-width:230px}
+    .pill{border:1px solid rgba(148,163,184,.18);padding:6px 10px;border-radius:999px;font-size:12px;color:var(--muted)}
+
+    /* Lista */
+    .list{padding:12px;display:grid;gap:12px}
+    .card{background:linear-gradient(180deg,#0b1224,#0a1020);border:1px solid rgba(148,163,184,.15);border-radius:16px;padding:12px;display:grid;gap:10px}
+    .card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .title{font-weight:700}
+    .sub{color:var(--muted);font-size:13px}
+    .chips{display:flex;flex-wrap:wrap;gap:6px}
+    .chip{font-size:12px;padding:6px 8px;border-radius:999px;background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.35)}
+    .chip.neg{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.45)}
+
+    .stats{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:10px}
+    .stat{background:#0b1224;border:1px solid rgba(148,163,184,.12);border-radius:12px;padding:8px}
+    .stat .k{font-size:12px;color:var(--muted)}
+    .stat .v{font-weight:800;font-size:16px}
+
+    .empty{padding:28px;text-align:center;color:var(--muted)}
+    footer{color:var(--muted);font-size:12px;text-align:center;padding:24px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>🏠 Avaliador de Casas <span class="badge">v1.0</span></h1>
+      <div class="sub">Registre, compare e exporte avaliações. Dados ficam salvos no seu navegador (LocalStorage).</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <!-- FORMULÁRIO -->
+      <section class="panel" aria-labelledby="formTitle">
+        <div class="hd" id="formTitle">Nova avaliação</div>
+        <form id="houseForm">
+          <div class="col-12">
+            <label for="nome">Nome da casa / referência</label>
+            <input id="nome" name="nome" placeholder="Casa 01 — Bairro X" required />
+          </div>
+          <div class="col-8">
+            <label for="endereco">Endereço</label>
+            <input id="endereco" name="endereco" placeholder="Rua, número, bairro, cidade" />
+          </div>
+          <div class="col-4">
+            <label for="contato">Nome do contato</label>
+            <input id="contato" name="contato" placeholder="Corretor(a) / Proprietário(a)" />
+          </div>
+
+          <div class="col-6">
+            <label for="telefone">Telefone</label>
+            <input id="telefone" name="telefone" placeholder="(xx) xxxxx-xxxx" />
+          </div>
+          <div class="col-3">
+            <label for="preco">Preço (R$)</label>
+            <input id="preco" name="preco" inputmode="decimal" placeholder="Ex.: 450.000,00" />
+          </div>
+          <div class="col-3">
+            <label for="tamanho">Tamanho (m²)</label>
+            <input id="tamanho" name="tamanho" inputmode="decimal" placeholder="Ex.: 120" />
+          </div>
+
+          <div class="col-3">
+            <label for="quartos">Quartos</label>
+            <input id="quartos" name="quartos" inputmode="numeric" placeholder="3" />
+          </div>
+          <div class="col-3">
+            <label for="banheiros">Banheiros</label>
+            <input id="banheiros" name="banheiros" inputmode="numeric" placeholder="2" />
+          </div>
+          <div class="col-3">
+            <label for="sala">Sala</label>
+            <input id="sala" name="sala" inputmode="numeric" placeholder="1" />
+          </div>
+          <div class="col-3">
+            <label for="cozinha">Cozinha</label>
+            <input id="cozinha" name="cozinha" inputmode="numeric" placeholder="1" />
+          </div>
+          <div class="col-6">
+            <label for="nota">Nota final (0–10)</label>
+            <input id="nota" name="nota" type="number" min="0" max="10" step="0.1" placeholder="8.5" />
+          </div>
+          <div class="col-12">
+            <label for="imagem">Imagem da casa <small class="pill">opcional</small></label>
+            <input id="imagem" name="imagem" type="file" accept="image/*" />
+          </div>
+
+          <div class="col-6">
+            <label for="positivos">Pontos positivos <small class="pill">separe com ;</small></label>
+            <textarea id="positivos" name="positivos" placeholder="Ex.: Bem ensolarada; Próxima a escola; Rua silenciosa"></textarea>
+          </div>
+          <div class="col-6">
+            <label for="negativos">Pontos negativos <small class="pill">separe com ;</small></label>
+            <textarea id="negativos" name="negativos" placeholder="Ex.: Sem vaga coberta; Pintura antiga"></textarea>
+          </div>
+
+          <div class="col-12 actions">
+            <button type="submit" class="btn btn-primary">➕ Adicionar</button>
+            <button type="button" id="btnLimpar" class="btn btn-soft">🧹 Limpar</button>
+          </div>
+        </form>
+        <div class="toolbar">
+          <div class="group">
+            <input id="busca" placeholder="Pesquisar por nome, bairro, contato…" />
+            <span class="pill" id="count"></span>
+          </div>
+          <div class="group" style="margin-left:auto">
+            <select id="ordenar">
+              <option value="-createdAt">Mais recente</option>
+              <option value="nota">Nota (↑)</option>
+              <option value="-nota">Nota (↓)</option>
+              <option value="preco">Preço (↑)</option>
+              <option value="-preco">Preço (↓)</option>
+              <option value="ppm2">R$/m² (↑)</option>
+              <option value="-ppm2">R$/m² (↓)</option>
+              <option value="tamanho">Tamanho (↑)</option>
+              <option value="-tamanho">Tamanho (↓)</option>
+            </select>
+            <button id="exportar" class="btn btn-soft" title="Exportar CSV">⬇️ Exportar</button>
+            <button id="apagarTudo" class="btn btn-danger" title="Apagar tudo">🗑️ Apagar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- LISTA -->
+      <section class="panel" aria-labelledby="listTitle">
+        <div class="hd" id="listTitle">Minhas avaliações</div>
+        <div class="list" id="lista"></div>
+        <div class="empty" id="vazio" hidden>Nenhum item por aqui ainda. Adicione sua primeira casa! ✨</div>
+      </section>
+    </div>
+
+    <footer>
+      Dica: clique em um cartão para editar. Use ";" para separar cada ponto positivo/negativo. — Seus dados ficam no seu navegador.
+    </footer>
+  </main>
+
+  <template id="tpl-card">
+    <article class="card" data-id="">
+      <div class="card-head">
+        <div>
+          <div class="title"></div>
+          <div class="sub"></div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-soft btn-editar" title="Editar">✏️ Editar</button>
+          <button class="btn btn-danger btn-excluir" title="Excluir">🗑️</button>
+        </div>
+      </div>
+      <div class="stats"></div>
+      <div class="chips chips-pos"></div>
+      <div class="chips chips-neg"></div>
+    </article>
+  </template>
+
+  <script>
+    // ------------------------- Utilidades -------------------------
+    const $ = (sel, el=document) => el.querySelector(sel);
+    const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+    const fmtNum = (n, opts={}) => isFinite(n) ? new Intl.NumberFormat('pt-BR', opts).format(n) : "—";
+    const toNumber = (v) => {
+      if (typeof v === 'number') return v;
+      if (!v) return NaN;
+      // Aceita "450.000,00" -> 450000.00
+      return Number(String(v).replace(/\./g,'').replace(',', '.').replace(/[^0-9.\-]/g,''));
+    }
+    const uid = () => Math.random().toString(36).slice(2,9);
+
+    // ------------------------- Estado -------------------------
+    const KEY = 'avaliador_casas_v1';
+    let state = load();
+
+    function load(){
+      try{ return JSON.parse(localStorage.getItem(KEY)) || {items:[]}; }catch{ return {items:[]} }
+    }
+    function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+    // ------------------------- Render -------------------------
+    const form = $('#houseForm');
+    const lista = $('#lista');
+    const vazio = $('#vazio');
+    const count = $('#count');
+
+    function render(){
+      const busca = $('#busca').value.trim().toLowerCase();
+      const ord = $('#ordenar').value;
+
+      let items = [...state.items];
+      if (busca) {
+        items = items.filter(i => (
+          i.nome+" "+i.endereco+" "+i.contato+" "+i.telefone
+        ).toLowerCase().includes(busca));
+      }
+
+  // Calcula campos derivados
+  items = items.map(it => ({...it, ppm2: (it.tamanho>0? it.preco/it.tamanho: NaN)}));
+
+      // Ordenação
+      const desc = ord.startsWith('-');
+      const key = desc ? ord.slice(1) : ord;
+      items.sort((a,b)=>{
+        const va = a[key];
+        const vb = b[key];
+        if (va==null && vb==null) return 0;
+        if (va==null) return 1;
+        if (vb==null) return -1;
+        if (va>vb) return desc?-1:1;
+        if (va<vb) return desc?1:-1;
+        return 0;
+      });
+
+      lista.innerHTML = '';
+      if (!items.length){ vazio.hidden = false; count.textContent = '0 itens'; return; }
+      vazio.hidden = true; count.textContent = `${items.length} item${items.length>1?'s':''}`;
+
+      const tpl = $('#tpl-card');
+      items.forEach(it=>{
+        const node = tpl.content.cloneNode(true);
+        const art = $('article', node);
+        art.dataset.id = it.id;
+        $('.title', node).textContent = it.nome || 'Sem nome';
+        $('.sub', node).textContent = `${it.endereco || '—'} · ${it.contato || '—'} · ${it.telefone || '—'}`;
+
+        // Imagem
+        if (it.imagem && typeof it.imagem === 'string' && it.imagem.startsWith('data:image/')) {
+          const img = document.createElement('img');
+          img.src = it.imagem;
+          img.alt = 'Imagem da casa';
+          img.style.maxWidth = '100%';
+          img.style.maxHeight = '120px';
+          img.style.display = 'block';
+          img.style.marginBottom = '8px';
+          art.insertBefore(img, s);
+        }
+        // Stats
+        const s = $('.stats', node);
+        s.appendChild(stat('Preço', `R$ ${fmtNum(it.preco, {maximumFractionDigits:2})}`));
+        s.appendChild(stat('Tamanho', `${fmtNum(it.tamanho)} m²`));
+        s.appendChild(stat('Quartos', fmtNum(it.quartos)));
+        s.appendChild(stat('Banheiros', fmtNum(it.banheiros)));
+        s.appendChild(stat('Sala', fmtNum(it.sala)));
+        s.appendChild(stat('Cozinha', fmtNum(it.cozinha)));
+        const ppm2 = isFinite(it.preco/it.tamanho) ? it.preco/it.tamanho : NaN;
+        s.appendChild(stat('R$/m²', isFinite(ppm2)? `R$ ${fmtNum(ppm2, {maximumFractionDigits:2})}` : '—'));
+        s.appendChild(stat('Nota', fmtNum(it.nota, {maximumFractionDigits:1})));
+
+        // Chips
+        const pos = (it.positivos||[]).filter(Boolean);
+        const neg = (it.negativos||[]).filter(Boolean);
+        const posWrap = $('.chips-pos', node);
+        const negWrap = $('.chips-neg', node);
+        pos.forEach(t=>posWrap.appendChild(chip(t)));
+        neg.forEach(t=>negWrap.appendChild(chip(t, true)));
+
+        // Ações
+        $('.btn-excluir', node).addEventListener('click', ()=> excluir(it.id));
+        $('.btn-editar', node).addEventListener('click', ()=> editar(it.id));
+        art.addEventListener('dblclick', ()=> editar(it.id));
+
+        lista.appendChild(node);
+      });
+    }
+
+    function stat(k,v){
+      const d = document.createElement('div'); d.className='stat';
+      const kk = document.createElement('div'); kk.className='k'; kk.textContent=k; d.appendChild(kk);
+      const vv = document.createElement('div'); vv.className='v'; vv.textContent=v; d.appendChild(vv);
+      return d;
+    }
+    function chip(text, neg=false){
+      const c = document.createElement('span'); c.className='chip'+(neg?' neg':''); c.textContent = text.trim(); return c;
+    }
+
+    // ------------------------- CRUD -------------------------
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const data = readForm();
+      if(!data.nome){ alert('Informe ao menos o nome/referência da casa.'); return; }
+      state.items.push({ id:uid(), createdAt:Date.now(), ...data });
+      save();
+      form.reset();
+      render();
+    });
+
+    $('#btnLimpar').addEventListener('click', ()=> form.reset());
+
+    function excluir(id){
+      if(!confirm('Remover esta avaliação?')) return;
+      state.items = state.items.filter(i=>i.id!==id);
+      save(); render();
+    }
+
+    function editar(id){
+      const it = state.items.find(i=>i.id===id); if(!it) return;
+      // Preenche o formulário
+      form.dataset.editing = id;
+      $('#nome').value = it.nome || '';
+      $('#endereco').value = it.endereco || '';
+      $('#contato').value = it.contato || '';
+      $('#telefone').value = it.telefone || '';
+      $('#preco').value = it.preco? fmtNum(it.preco,{minimumFractionDigits:2}) : '';
+      $('#tamanho').value = it.tamanho || '';
+  $('#quartos').value = it.quartos || '';
+  $('#banheiros').value = it.banheiros || '';
+  $('#sala').value = it.sala || '';
+  $('#cozinha').value = it.cozinha || '';
+  $('#nota').value = it.nota ?? '';
+  $('#positivos').value = (it.positivos||[]).join('; ');
+  $('#negativos').value = (it.negativos||[]).join('; ');
+  // Imagem não é preenchida por segurança do navegador
+
+      // Troca botão Adicionar por Salvar/Cancelar
+      ensureEditButtons();
+    }
+
+    function ensureEditButtons(){
+      if ($('#btnSalvar')) return; // já existe
+      const box = $('.actions');
+      const addBtn = box.querySelector('button[type="submit"]');
+      addBtn.hidden = true;
+
+      const saveBtn = document.createElement('button');
+      saveBtn.id='btnSalvar'; saveBtn.className='btn btn-primary'; saveBtn.type='button'; saveBtn.textContent='💾 Salvar';
+      saveBtn.addEventListener('click', ()=>{
+        const id = form.dataset.editing;
+        if(!id) return;
+        const idx = state.items.findIndex(i=>i.id===id);
+        const data = readForm();
+        state.items[idx] = { ...state.items[idx], ...data };
+        delete form.dataset.editing; save(); form.reset();
+        addBtn.hidden=false; saveBtn.remove(); cancelBtn.remove();
+        render();
+      });
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.id='btnCancelar'; cancelBtn.className='btn btn-soft'; cancelBtn.type='button'; cancelBtn.textContent='↩️ Cancelar';
+      cancelBtn.addEventListener('click', ()=>{
+        delete form.dataset.editing; form.reset(); saveBtn.remove(); cancelBtn.remove(); addBtn.hidden=false; });
+
+      box.append(saveBtn, cancelBtn);
+    }
+
+    function readForm(){
+      const positivos = $('#positivos').value.split(';').map(s=>s.trim()).filter(Boolean);
+      const negativos = $('#negativos').value.split(';').map(s=>s.trim()).filter(Boolean);
+      const preco = toNumber($('#preco').value);
+      const tamanho = toNumber($('#tamanho').value);
+      const quartos = toNumber($('#quartos').value);
+      const banheiros = toNumber($('#banheiros').value);
+      const sala = toNumber($('#sala').value);
+      const cozinha = toNumber($('#cozinha').value);
+      const nota = toNumber($('#nota').value);
+      let imagem = '';
+      var imagemInputEl = document.getElementById('imagem');
+      if (imagemInputEl && imagemInputEl.files && imagemInputEl.files[0]) {
+        imagem = imagemInputEl.dataset.base64 || '';
+      }
+      return {
+        nome: $('#nome').value.trim(),
+        endereco: $('#endereco').value.trim(),
+        contato: $('#contato').value.trim(),
+        telefone: $('#telefone').value.trim(),
+        preco: isFinite(preco)?preco:NaN,
+        tamanho: isFinite(tamanho)?tamanho:NaN,
+        quartos: isFinite(quartos)?quartos:NaN,
+        banheiros: isFinite(banheiros)?banheiros:NaN,
+        sala: isFinite(sala)?sala:NaN,
+        cozinha: isFinite(cozinha)?cozinha:NaN,
+        nota: isFinite(nota)?nota:NaN,
+        imagem,
+        positivos, negativos
+      }
+    // Leitura de imagem para base64
+    var imagemInputEl2 = document.getElementById('imagem');
+    if (imagemInputEl2) {
+      imagemInputEl2.addEventListener('change', function(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) { imagemInputEl2.dataset.base64 = ''; return; }
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          imagemInputEl2.dataset.base64 = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    }
+
+    // ------------------------- Busca/ordenação/exportação -------------------------
+    $('#busca').addEventListener('input', render);
+    $('#ordenar').addEventListener('change', render);
+
+    $('#exportar').addEventListener('click', ()=>{
+      if(!state.items.length){ alert('Nada para exportar.'); return; }
+      const rows = [
+        ['Nome','Endereço','Contato','Telefone','Preço (R$)','Tamanho (m²)','Quartos','Banheiros','R$/m²','Nota','Positivos','Negativos']
+      ];
+      state.items.forEach(it=>{
+        const ppm2 = (isFinite(it.preco/it.tamanho))? (it.preco/it.tamanho) : '';
+        rows.push([
+          it.nome||'', it.endereco||'', it.contato||'', it.telefone||'',
+          isFinite(it.preco)? it.preco.toString().replace('.',',') : '',
+          isFinite(it.tamanho)? it.tamanho : '',
+          isFinite(it.quartos)? it.quartos : '',
+          isFinite(it.banheiros)? it.banheiros : '',
+          isFinite(ppm2)? ppm2.toFixed(2).replace('.',',') : '',
+          isFinite(it.nota)? it.nota : '',
+          (it.positivos||[]).join('; '),
+          (it.negativos||[]).join('; ')
+        ]);
+      });
+      const csv = rows.map(r=> r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+      const blob = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'}); // BOM para Excel PT-BR
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='avaliacoes_casas.csv'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    $('#apagarTudo').addEventListener('click', ()=>{
+      if(confirm('Apagar TODAS as avaliações? Esta ação não pode ser desfeita.')){
+        state.items = []; save(); render();
+      }
+    });
+
+    // Máscaras simples
+    $('#telefone').addEventListener('input', (e)=>{
+      const n = e.target.value.replace(/\D/g,'').slice(0,11);
+      const p = n.length>10 ? /(\d{2})(\d{5})(\d{0,4})/ : /(\d{2})(\d{4})(\d{0,4})/;
+      e.target.value = n.replace(p, '($1) $2-$3').trim().replace(/[- ]$/,'');
+    });
+
+    // Render inicial
+    render();
+  </script>
+</body>
+</html>
